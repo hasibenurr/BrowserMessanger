@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>cock-a-doodle-doo</title>
+    <link rel= "stylesheet" href= "http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src= "http://code.jquery.com/jquery-latest.min.js"> </script>
+    <script src= "/socket.io/socket.io.js"></script>
+    <style>
+        body{
+            margin-top:50px;
+            background-color: #FFC0CB;
+        }
+        #MessageArea{
+            display: none;
+        }
+        .error{
+            color: red;
+        }
+
+    </style>
+</head>
+<body>
+    <div class= "container">
+        <div id="userFormArea" class="row">
+            <div class="col-md-12">
+            <p id="nickError"> </p> 
+            <br />  
+            <form id="userForm">
+            <div class= "form-group">
+                <label>Lütfen IP ve Nickname alanlarını eksiksiz doldurun!</label>
+                <br />  
+                <br />  
+                <label>Nickname:</label>
+                <input class= "form-control" id="username" />
+        <br />  
+            <label>IP Adresiniz:</label>
+            <input class= "form-control" id="ipadress" />
+        <br/>
+        <button type="submit" class="btn btn-danger btn-lg">
+                <span class="glyphicon glyphicon-log-in"></span> 
+            </button>           
+            </div>  
+            </form>
+        </div>
+    </div>
+    <div id="MessageArea" class= "row">
+        <div class="col-md-4">
+            <div class= "alert alert-danger">
+            <form id="onoffline">
+            <div class= "form-group">
+                <h3>Online</h3>
+                <ul class= "list-group" id="users"></ul>
+            </div>
+        </div>
+        <div class= "row">
+        <div class= "col-md-12">
+            <div class= "alert alert-danger">
+            <h3>Offline</h3>        
+            <div class="offline" id="offlineuser"></div>
+        <br />
+        </div>  
+            <button type="submit" class="btn btn-danger btn-lg">
+                <span class="glyphicon glyphicon-log-out"></span> 
+            </button>                       
+            </form>
+           </div>
+        </div>  
+      </div>
+      <br />        
+        <div class= "col-md-8">
+            <div class="chat" id="chat"></div>
+            <form id="messageForm">
+            <div class= "form-group">
+            <label>PM atabilmek için "/p isim mesaj" formatında giriş yapınız!</label>
+            <br />  
+            <label>Mesaj:</label>
+            <textarea class= "form-control" id="message"></textarea>
+            <br />
+            <button type="submit" class="btn btn-danger btn-lg">
+                    <span class="glyphicon glyphicon-envelope"></span> 
+            </button>                                                               
+        </div>  
+        </form>
+        <form id="privateForm" class= "form-group">                         
+                <button type="submit" class="btn btn-success btn-lg">
+                <span class="glyphicon glyphicon-envelope"></span> PM
+                </button>   
+            </form> 
+        </div>  
+        <br />              
+    </div>
+</div>
+
+<script>
+
+$(function(){
+    
+    var socket =io.connect();
+
+    var $MessageArea= $('#MessageArea');
+    var $userFormArea= $('#userFormArea');
+    var $userForm= $('#userForm');
+    var $userBox= $('#username');
+    var $onoffline= $('#onoffline');
+    var $nickError= $('#nickError');    
+    var $messageForm= $('#messageForm');
+    var $messageBox= $('#message');
+    var $users= $('#users');
+    var $offusers=$('#offusers');
+    var $chat= $('#chat');
+    var $offarea= $('#offlineuser');
+    var $privateForm=$('#privateForm');
+        
+
+            // Oturum Kapat(Logout)
+        $onoffline.submit(function(e){
+            e.preventDefault();
+            var logout = confirm("Oturumu kapatmak istediğinize emin misiniz?");
+            if(logout==true){
+                console.log("Oturum Kapatıldı!");
+                socket.emit('disconnectedd');
+                $userFormArea.show();
+                $MessageArea.hide();
+            }
+            else{
+                console.log("Oturum Kapatma iptal edildi!");
+            }
+        });
+
+        socket.on('offline',function(data){
+
+            // Offline listele              
+           $offarea.append('<div class="alert alert-warning">'+data.user+'</div>');                             
+                console.log(data.user+" Sohbetten çıktı.");
+                //alert(data.user + " sohbetten ayrıldı!");
+        });
+        
+
+            // Özel gönder tuşu
+        $privateForm.submit(function(e){
+            e.preventDefault();
+        //  var izin= confirm("Özel konuşma isteğini kabul ediyor musunuz?");
+        //  if(izin==true){ 
+        console.log("Özel Konuşma Kabul edildi!");
+        socket.emit('private message',$messageBox.val(),function(data){
+        $chat.append('<div class="alert alert-info">'+ data +'</div>'); 
+        });
+        $messageBox.val('');
+        
+        });
+
+
+        // Özel mesajlaşma 
+        socket.on('whisper',function(data){
+        $chat.append('<div class="alert alert-success"><strong>'+data.user+'</strong>:'+data.msg+'</div>'); 
+        });
+
+        // Oturum Aç butonuna tıklanınca;
+        $userForm.submit(function(e){
+        e.preventDefault();
+        if($userBox.val()==' '){
+        $nickError.html('Nickname alanını doldurmadan giriş yapamazsınız!');
+        }
+        else{
+        socket.emit('new user',$userBox.val(),function(data){
+    
+            if(data){
+                $userFormArea.hide();
+                $MessageArea.show();
+            }
+            else{
+                $nickError.html('Bu nickname kullanılıyor. Lütfen tekrar deneyiniz!');
+            }
+        }); 
+            $userBox.val('');
+        }
+        });
+
+
+        // Server.js deki get users modülümüzü burada aktif ediyoruz.
+        socket.on('get users', function(data){
+        var html = '';
+        for (i =0; i < data.length; i++) {
+        html += '<li class= "   list-group-item">'+data[i]+'</li>';
+        }
+            $users.html(html);
+        });
+
+
+        // Grup Gönder butonuna tıklanınca
+        $messageForm.submit(function(e){
+            e.preventDefault();
+        socket.emit('send message',$messageBox.val());
+            $messageBox.val('');
+        });
+
+        // Burada tüm soketlerin mesajlaşabilmesini sağlıyoruz.
+        socket.on('new message', function(data){
+        $chat.append('<div class="alert alert-danger"><strong>'+data.user+'</strong>:'+data.msg+'</div>');  
+        });
+
+
+});
+
+</script>
+</body>
+</html>

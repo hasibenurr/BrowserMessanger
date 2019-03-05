@@ -1,0 +1,26 @@
+{
+  "name": "chat",
+  "version": "0.0.1",
+  "private": "true",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.3",
+    "socket.io": "^2.1.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "description": "Chat App",
+  "main": "server.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hasibenurr/Yazlab.git"
+  },
+  "author": "Hasibe",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hasibenurr/Yazlab/issues"
+  },
+  "homepage": "https://github.com/hasibenurr/Yazlab#readme"
+}
